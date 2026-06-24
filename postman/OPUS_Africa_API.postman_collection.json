@@ -1,0 +1,409 @@
+{
+  "info": {
+    "name": "OPUS Africa Meeting Scheduling API",
+    "description": "Postman collection for the OPUS Africa meeting scheduling backend. Run 'Login' first (or 'Register') -- it automatically saves the access/refresh tokens into collection variables so every other request authenticates itself.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api/v1" },
+    { "key": "access_token", "value": "" },
+    { "key": "refresh_token", "value": "" },
+    { "key": "organization_id", "value": "" },
+    { "key": "meeting_id", "value": "" },
+    { "key": "slot_id", "value": "" },
+    { "key": "slot_id_2", "value": "" },
+    { "key": "user_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"secretary@opusafrica.org\",\n  \"password\": \"SecretPass123!\",\n  \"first_name\": \"Ama\",\n  \"last_name\": \"Boateng\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.access) { pm.collectionVariables.set('access_token', data.access); }",
+                  "if (data.refresh) { pm.collectionVariables.set('refresh_token', data.refresh); }",
+                  "pm.test('Login returned tokens', () => pm.expect(data.access).to.exist);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"secretary@opusafrica.org\",\n  \"password\": \"SecretPass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.access) { pm.collectionVariables.set('access_token', data.access); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/refresh/",
+            "body": { "mode": "raw", "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}" }
+          }
+        },
+        {
+          "name": "Logout (blacklist refresh token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/logout/",
+            "body": { "mode": "raw", "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}" }
+          }
+        },
+        {
+          "name": "Get Current User (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('user_id', data.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{base_url}}/auth/users/me/" }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/change-password/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"SecretPass123!\",\n  \"new_password\": \"NewSecretPass123!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "Create Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('organization_id', data.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/organizations/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"OPUS Africa\",\n  \"description\": \"US-Africa relations org\"\n}"
+            }
+          }
+        },
+        { "name": "List Organizations", "request": { "method": "GET", "url": "{{base_url}}/organizations/" } },
+        { "name": "Get Organization", "request": { "method": "GET", "url": "{{base_url}}/organizations/{{organization_id}}/" } },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/organizations/{{organization_id}}/",
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"Updated description\"\n}" }
+          }
+        },
+        { "name": "Delete Organization", "request": { "method": "DELETE", "url": "{{base_url}}/organizations/{{organization_id}}/" } }
+      ]
+    },
+    {
+      "name": "Memberships",
+      "item": [
+        {
+          "name": "Add Member to Organization",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/memberships/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"organization\": \"{{organization_id}}\",\n  \"role\": \"ADMIN\",\n  \"position\": \"Secretary\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Memberships for Organization",
+          "request": { "method": "GET", "url": "{{base_url}}/memberships/?organization={{organization_id}}" }
+        },
+        {
+          "name": "Update Membership Role",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/memberships/REPLACE_MEMBERSHIP_ID/",
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"EXECUTIVE\"\n}" }
+          }
+        },
+        {
+          "name": "Remove Membership",
+          "request": { "method": "DELETE", "url": "{{base_url}}/memberships/REPLACE_MEMBERSHIP_ID/" }
+        }
+      ]
+    },
+    {
+      "name": "Meetings",
+      "item": [
+        {
+          "name": "Create Meeting (DRAFT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('meeting_id', data.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/meetings/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization\": \"{{organization_id}}\",\n  \"title\": \"Monthly General Meeting\",\n  \"description\": \"Routine monthly sync\",\n  \"meeting_type\": \"GENERAL\",\n  \"availability_deadline\": \"2026-07-01T18:00:00Z\",\n  \"decision_mode\": \"REQUIRE_QUORUM\",\n  \"quorum_percentage\": 60\n}"
+            }
+          }
+        },
+        { "name": "List Meetings", "request": { "method": "GET", "url": "{{base_url}}/meetings/?organization={{organization_id}}" } },
+        { "name": "Get Meeting", "request": { "method": "GET", "url": "{{base_url}}/meetings/{{meeting_id}}/" } },
+        {
+          "name": "Update Meeting",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/meetings/{{meeting_id}}/",
+            "body": { "mode": "raw", "raw": "{\n  \"location\": \"OPUS Africa HQ, Room 204\"\n}" }
+          }
+        },
+        {
+          "name": "Open Voting",
+          "request": { "method": "POST", "url": "{{base_url}}/meetings/{{meeting_id}}/open-voting/" }
+        },
+        {
+          "name": "Close Voting",
+          "request": { "method": "POST", "url": "{{base_url}}/meetings/{{meeting_id}}/close-voting/" }
+        },
+        {
+          "name": "Get Best Slots (recommendation engine)",
+          "request": { "method": "GET", "url": "{{base_url}}/meetings/{{meeting_id}}/best-slots/" }
+        },
+        {
+          "name": "Schedule Meeting (final decision)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/meetings/{{meeting_id}}/schedule/",
+            "body": { "mode": "raw", "raw": "{\n  \"slot_id\": \"{{slot_id}}\"\n}" }
+          }
+        },
+        {
+          "name": "Cancel Meeting",
+          "request": { "method": "POST", "url": "{{base_url}}/meetings/{{meeting_id}}/cancel/" }
+        }
+      ]
+    },
+    {
+      "name": "Meeting Slots",
+      "item": [
+        {
+          "name": "Propose Slot 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('slot_id', data.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/meeting-slots/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meeting\": \"{{meeting_id}}\",\n  \"start_time\": \"2026-06-30T17:00:00Z\",\n  \"end_time\": \"2026-06-30T18:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Propose Slot 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('slot_id_2', data.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/meeting-slots/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meeting\": \"{{meeting_id}}\",\n  \"start_time\": \"2026-06-30T20:00:00Z\",\n  \"end_time\": \"2026-06-30T21:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Slots for Meeting",
+          "request": { "method": "GET", "url": "{{base_url}}/meeting-slots/?meeting={{meeting_id}}" }
+        },
+        {
+          "name": "Delete Slot",
+          "request": { "method": "DELETE", "url": "{{base_url}}/meeting-slots/{{slot_id_2}}/" }
+        }
+      ]
+    },
+    {
+      "name": "Availability (Voting)",
+      "item": [
+        {
+          "name": "Cast Vote - Available",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/availability/cast-vote/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slot_id\": \"{{slot_id}}\",\n  \"status\": \"AVAILABLE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cast Vote - Maybe (with note)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/availability/cast-vote/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slot_id\": \"{{slot_id_2}}\",\n  \"status\": \"MAYBE\",\n  \"note\": \"Might have a conflict, will confirm\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cast Vote - Not Available",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/availability/cast-vote/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slot_id\": \"{{slot_id_2}}\",\n  \"status\": \"NOT_AVAILABLE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List All Votes for Meeting",
+          "request": { "method": "GET", "url": "{{base_url}}/availability/?meeting={{meeting_id}}" }
+        },
+        {
+          "name": "My Votes for Meeting",
+          "request": { "method": "GET", "url": "{{base_url}}/availability/my-votes/?meeting={{meeting_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Meeting Attendance",
+      "item": [
+        {
+          "name": "Record Attendance",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/meeting-attendance/",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meeting\": \"{{meeting_id}}\",\n  \"user\": \"{{user_id}}\",\n  \"status\": \"PRESENT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Attendance for Meeting",
+          "request": { "method": "GET", "url": "{{base_url}}/meeting-attendance/?meeting={{meeting_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        { "name": "List My Notifications", "request": { "method": "GET", "url": "{{base_url}}/notifications/" } },
+        {
+          "name": "Mark Notification as Read",
+          "request": { "method": "PATCH", "url": "{{base_url}}/notifications/REPLACE_NOTIFICATION_ID/read/" }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": { "method": "POST", "url": "{{base_url}}/notifications/mark-all-read/" }
+        }
+      ]
+    }
+  ]
+}

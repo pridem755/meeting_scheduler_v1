@@ -1,0 +1,9 @@
+
+Django>=6.0,<6.1
+djangorestframework>=3.16
+djangorestframework-simplejwt>=5.3
+drf-spectacular>=0.27
+django-environ>=0.11
+django-cors-headers>=4.3
+resend>=2.0.0
+psycopg2-binary>=2.9
